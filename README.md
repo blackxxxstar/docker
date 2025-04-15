@@ -102,7 +102,7 @@ docker completion bash > ~/.local/share/bash-completion/completions/docker
 
 ```bash
 exit
-ssh afdal@192.168.10.11
+ssh user@ubuntu
 ```
 
 Check if Docker is working:
