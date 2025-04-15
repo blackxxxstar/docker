@@ -1,8 +1,8 @@
 ---
 
-# Traefik Reverse Proxy with Docker & Cloudflare DNS
+# 🌐 Traefik Reverse Proxy with Docker & Cloudflare DNS
 
-## This repository provides a ready-to-use setup for **Traefik** as a reverse proxy, featuring:
+### This repository provides a ready-to-use setup for **Traefik** as a reverse proxy, featuring:
 
 - HTTPS with Let's Encrypt via **Cloudflare DNS Challenge**
 - Basic Auth-protected **Traefik dashboard**
