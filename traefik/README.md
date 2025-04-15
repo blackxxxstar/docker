@@ -25,6 +25,8 @@ Traefik and all routed containers must share the same network:
 docker network create proxy
 ```
 
+> The network must be named `proxy`.
+
 ---
 
 ### 2. Generate Basic Auth (optional but recommended)
@@ -89,10 +91,10 @@ docker compose up -d
 
 Once your domain is pointed to the server:
 
-- Go to: `https://traefik.local.domain.com`
+- Visit: `https://traefik.local.domain.com`
 - Login using `admin` / `admin` (or your custom credentials)
 
-The dashboard is secured with HTTP Basic Auth.
+Dashboard is secured with HTTP Basic Auth.
 
 ---
 
@@ -100,23 +102,41 @@ The dashboard is secured with HTTP Basic Auth.
 
 This setup uses **DNS-01 challenge** to generate and renew SSL certificates automatically via Cloudflare.
 
-Ensure:
+Certificates are stored in `./certs/acme.json`.
 
-- Your domain's DNS is managed by Cloudflare
-- Your API token in `.env` has permission to manage DNS
-- The domain and subdomains used are configured properly in:
-  ```yaml
-  - --entrypoints.websecure.http.tls.domains[0].main=local.domain.com
-  - --entrypoints.websecure.http.tls.domains[0].sans=*.local.domain.com
-  ```
+Make sure the file exists and has correct permissions:
 
-Certificates will be stored in `./certs/acme.json`.
+```bash
+touch certs/acme.json
+chmod 600 certs/acme.json
+```
+
+---
+
+### 🔐 Cloudflare API Tokens
+
+To allow Traefik to manage DNS records for certificate generation, create an API token with:
+
+- **Zone / Zone / Read**
+- **Zone / DNS / Edit**
+
+Scope the access to **all zones** you'll be using.
+
+Use the token in `.env`:
+
+```env
+CF_DNS_API_TOKEN=your_cloudflare_api_token
+```
+
+> This token is passed to [Lego](https://go-acme.github.io/lego/) — the ACME client used by Traefik.
+
+More info: [Cloudflare API Token Docs](https://developers.cloudflare.com/api/tokens/create/)
 
 ---
 
 ## 🧩 Traefik Labels for Your Services
 
-To expose other services via Traefik, add these labels to your container:
+To expose a container through Traefik, example labels:
 
 ```yaml
 labels:
@@ -127,7 +147,7 @@ labels:
   - "traefik.docker.network=proxy"
 ```
 
-And connect the container to the `proxy` network:
+And connect to the `proxy` network:
 
 ```yaml
 networks:
@@ -144,13 +164,6 @@ traefik/
 ├── .env.example
 ├── certs/
 │   └── acme.json  # Let's Encrypt certificate store
-```
-
-Make sure `acme.json` exists and has correct permissions:
-
-```bash
-touch certs/acme.json
-chmod 600 certs/acme.json
 ```
 
 ---
