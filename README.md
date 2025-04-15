@@ -1,5 +1,3 @@
----
-
 # 🐳 Docker Host Setup (Ubuntu)
 
 This guide provides a step-by-step setup for installing **Docker**, **Docker Compose**, and essential CLI tools on a fresh Ubuntu machine. It also includes bash completion setup for better terminal UX.
