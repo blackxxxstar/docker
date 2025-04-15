@@ -1,35 +1,51 @@
-# Traefik Reverse Proxy Setup
+---
 
-This guide helps you set up **Traefik** as a reverse proxy using Docker. Follow these steps to get started.
+# Traefik Reverse Proxy Setup with Docker & Cloudflare DNS
 
-## Prerequisites
-
-- Docker and Docker Compose installed on your system.
-- Basic understanding of how reverse proxies and Docker networking work.
+This repository contains a ready-to-use setup of **Traefik** as a modern reverse proxy with automatic HTTPS via Let's Encrypt (DNS Challenge using Cloudflare).
 
 ---
 
-## Setup Instructions
+## 🧰 Prerequisites
+
+- Docker & Docker Compose installed
+- Domain name (e.g., `local.domain.com`)
+- [Cloudflare](https://cloudflare.com) account managing your domain DNS
+- Cloudflare **API Token** with permission to edit DNS records
+
+---
+
+## 🚀 Setup Instructions
 
 ### 1. Create a Docker Network
 
-This allows Traefik to communicate with other containers via a shared network:
+Traefik and all routed containers must share the same network:
 
 ```bash
 docker network create proxy
 ```
 
-> The network must be named `proxy` so that Traefik can automatically detect other containers connected to it.
-
 ---
 
-### 2. Generate HTTP Basic Auth Credentials
+### 2. Generate Basic Auth (optional but recommended)
 
-To secure the Traefik dashboard, generate an `.htpasswd` file with bcrypt encryption.
+To secure the Traefik dashboard, generate a bcrypt password:
 
-1. Go to [https://www.hostingcanada.org/htpasswd-generator](https://www.hostingcanada.org/htpasswd-generator)
-2. Enter your desired username and password.
-3. Copy the output (starting with `$2y$...`) and save it.
+1. Visit: [https://www.hostingcanada.org/htpasswd-generator](https://www.hostingcanada.org/htpasswd-generator)
+2. Enter your desired **username** and **password**
+3. Copy the result (e.g., `admin:$2y$...`) and replace the existing value in `docker-compose.yml` if needed
+
+**Default credentials:**
+
+```
+Username: admin
+Password: admin
+```
+
+Already included in:
+```yaml
+traefik.http.middlewares.myauth.basicauth.users=admin:$2y$10$y.jfFP2fPRSSnGX2zLibg.xAB6rOG7PjHR.3ltdm0uHi.HWKVBEJ6
+```
 
 ---
 
@@ -42,52 +58,105 @@ cd docker/traefik
 
 ---
 
-### 4. Set Environment Variables
+### 4. Configure Environment Variables
 
-Copy the example `.env` file and modify it with your custom values, including the `HTTP_BASIC_AUTH` you generated earlier.
+Copy and edit the environment file:
 
 ```bash
 cp .env.example .env
 ```
 
-Open `.env` in your editor and configure:
+In `.env`, set:
 
-- `CF_DNS_API_TOKEN`: Cloudflare DNS API Token
+```env
+CF_DNS_API_TOKEN=your_cloudflare_api_token
+```
 
 ---
 
 ### 5. Start Traefik
 
-Pull the latest Docker images:
+Pull and start the services:
 
 ```bash
 docker compose pull
-```
-
-Then start Traefik in detached mode:
-
-```bash
 docker compose up -d
 ```
 
 ---
 
-## Notes
+## 🌐 Accessing the Traefik Dashboard
 
-- The Traefik dashboard will be accessible at `https://traefik.<your-domain>` if DNS and SSL are correctly configured.
-- All your future services (e.g., apps, APIs) should:
-  - Be attached to the same `proxy` network.
-  - Have appropriate Traefik labels for routing.
-- You can use this Traefik instance with other `docker-compose` stacks by adding:
-  ```yaml
-  networks:
-    - proxy
-  ```
+Once your domain is pointed to the server:
+
+- Go to: `https://traefik.local.domain.com`
+- Login using `admin` / `admin` (or your custom credentials)
+
+The dashboard is secured with HTTP Basic Auth.
 
 ---
 
-## License
+## 🔒 HTTPS via Let's Encrypt (Cloudflare DNS)
 
-This setup is provided as-is under the MIT License.
+This setup uses **DNS-01 challenge** to generate and renew SSL certificates automatically via Cloudflare.
+
+Ensure:
+
+- Your domain's DNS is managed by Cloudflare
+- Your API token in `.env` has permission to manage DNS
+- The domain and subdomains used are configured properly in:
+  ```yaml
+  - --entrypoints.websecure.http.tls.domains[0].main=local.domain.com
+  - --entrypoints.websecure.http.tls.domains[0].sans=*.local.domain.com
+  ```
+
+Certificates will be stored in `./certs/acme.json`.
+
+---
+
+## 🧩 Traefik Labels for Your Services
+
+To expose other services via Traefik, add these labels to your container:
+
+```yaml
+labels:
+  - "traefik.enable=true"
+  - "traefik.http.routers.myapp.rule=Host(`app.local.domain.com`)"
+  - "traefik.http.routers.myapp.entrypoints=websecure"
+  - "traefik.http.routers.myapp.tls.certresolver=myresolver"
+  - "traefik.docker.network=proxy"
+```
+
+And connect the container to the `proxy` network:
+
+```yaml
+networks:
+  - proxy
+```
+
+---
+
+## 📁 File Structure
+
+```
+traefik/
+├── docker-compose.yml
+├── .env.example
+├── certs/
+│   └── acme.json  # Let's Encrypt certificate store
+```
+
+Make sure `acme.json` exists and has correct permissions:
+
+```bash
+touch certs/acme.json
+chmod 600 certs/acme.json
+```
+
+---
+
+## 📜 License
+
+This setup is provided under the MIT License.
 
 ---
