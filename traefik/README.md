@@ -168,11 +168,3 @@ Make sure `acme.json` exists:
 touch certs/acme.json
 chmod 600 certs/acme.json
 ```
-
----
-
-## 📜 License
-
-MIT License
-
----
