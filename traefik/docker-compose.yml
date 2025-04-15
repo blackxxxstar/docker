@@ -1,0 +1,53 @@
+services:
+  traefik:
+    container_name: traefik
+    image: traefik
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - proxy
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./certs:/letsencrypt
+    command:
+      - --api.dashboard=true
+      - --log.level=INFO
+      - --accesslog=true
+      - --providers.docker=true
+      - --providers.docker.exposedByDefault=false
+      - --providers.docker.network=proxy
+
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entryPoints.web.http.redirections.entrypoint.scheme=https
+
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.websecure.asDefault=true
+      - --entrypoints.websecure.http.tls=true
+      - --entrypoints.websecure.http.tls.certresolver=myresolver
+      - --entrypoints.websecure.http.tls.domains[0].main=local.domain.com
+      - --entrypoints.websecure.http.tls.domains[0].sans=*.local.domain.com
+
+      - --certificatesresolvers.myresolver.acme.dnschallenge=true
+      - --certificatesresolvers.myresolver.acme.dnschallenge.provider=cloudflare
+      - --certificatesresolvers.myresolver.acme.dnschallenge.resolvers=1.1.1.1:53,1.0.0.1:53
+      - --certificatesresolvers.myresolver.acme.email=demo@mail.com
+      - --certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json
+    environment:
+      - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.mydashboard.entrypoints=websecure
+      - traefik.http.routers.mydashboard.tls.certresolver=myresolver
+      - traefik.http.routers.mydashboard.rule=Host(`traefik.local.domain.com`)
+      - traefik.http.routers.mydashboard.service=api@internal
+      - traefik.http.routers.mydashboard.middlewares=myauth
+      - traefik.http.services.mydashboard.loadbalancer.server.port=1337
+      - traefik.http.middlewares.myauth.basicauth.users= admin:$2y$10$y.jfFP2fPRSSnGX2zLibg.xAB6rOG7PjHR.3ltdm0uHi.HWKVBEJ6
+
+networks:
+  proxy:
+    external: true
