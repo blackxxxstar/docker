@@ -29,7 +29,7 @@ To secure the Traefik dashboard, generate an `.htpasswd` file with bcrypt encryp
 
 1. Go to [https://www.hostingcanada.org/htpasswd-generator](https://www.hostingcanada.org/htpasswd-generator)
 2. Enter your desired username and password.
-3. Copy the output (starting with `$2y$...`) and save it — you'll use it in the `.env` file.
+3. Copy the output (starting with `$2y$...`) and save it.
 
 ---
 
@@ -52,9 +52,7 @@ cp .env.example .env
 
 Open `.env` in your editor and configure:
 
-- `EMAIL`: your email address for Let's Encrypt SSL.
-- `DOMAIN`: your main domain (e.g., `example.com`).
-- `TRAEFIK_USERPASS`: your bcrypt htpasswd string (e.g., `admin:$2y$...`).
+- `CF_DNS_API_TOKEN`: Cloudflare DNS API Token
 
 ---
 
