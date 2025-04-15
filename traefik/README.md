@@ -1,5 +1,3 @@
----
-
 # 🌐 Traefik Reverse Proxy with Docker & Cloudflare DNS
 
 ### This repository provides a ready-to-use setup for **Traefik** as a reverse proxy, featuring:
