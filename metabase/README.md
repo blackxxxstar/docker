@@ -1,5 +1,3 @@
----
-
 # 🚀 Metabase with Docker Compose Setup
 
 This guide shows you how to deploy **Metabase** and a PostgreSQL database using Docker Compose. It includes dummy configurations for easy setup and testing.
