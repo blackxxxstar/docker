@@ -1,10 +1,10 @@
 services:
   traefik:
-    container_name: traefik
     image: traefik
+    container_name: traefik
     ports:
-      - "80:80"
-      - "443:443"
+      - 80:80
+      - 443:443
     networks:
       - proxy
     volumes:
@@ -33,6 +33,7 @@ services:
       - --certificatesresolvers.myresolver.acme.dnschallenge=true
       - --certificatesresolvers.myresolver.acme.dnschallenge.provider=cloudflare
       - --certificatesresolvers.myresolver.acme.dnschallenge.resolvers=1.1.1.1:53,1.0.0.1:53
+      # - --certificatesresolvers.myresolver.acme.dnschallenge.delaybeforecheck=20
       - --certificatesresolvers.myresolver.acme.email=demo@mail.com
       - --certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json
     environment:
@@ -42,11 +43,11 @@ services:
       - traefik.docker.network=proxy
       - traefik.http.routers.mydashboard.entrypoints=websecure
       - traefik.http.routers.mydashboard.tls.certresolver=myresolver
-      - traefik.http.routers.mydashboard.rule=Host(`traefik.local.domain.com`)
+      - traefik.http.routers.mydashboard.rule=Host(`traefik.home.blackstar.my.id`)
       - traefik.http.routers.mydashboard.service=api@internal
       - traefik.http.routers.mydashboard.middlewares=myauth
       - traefik.http.services.mydashboard.loadbalancer.server.port=1337
-      - traefik.http.middlewares.myauth.basicauth.users= admin:$2y$10$y.jfFP2fPRSSnGX2zLibg.xAB6rOG7PjHR.3ltdm0uHi.HWKVBEJ6
+      - traefik.http.middlewares.myauth.basicauth.users=admin:$2y$10$BAqQbyOOU2hdhqPuCk57OuEcMTLqK0.kXTt63B7DZGxqBxEydlyt6
 
 networks:
   proxy:
