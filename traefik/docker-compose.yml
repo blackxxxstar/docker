@@ -43,7 +43,7 @@ services:
       - traefik.docker.network=proxy
       - traefik.http.routers.mydashboard.entrypoints=websecure
       - traefik.http.routers.mydashboard.tls.certresolver=myresolver
-      - traefik.http.routers.mydashboard.rule=Host(`traefik.home.blackstar.my.id`)
+      - traefik.http.routers.mydashboard.rule=Host(`traefik.local.domain.com`)
       - traefik.http.routers.mydashboard.service=api@internal
       - traefik.http.routers.mydashboard.middlewares=myauth
       - traefik.http.services.mydashboard.loadbalancer.server.port=1337
