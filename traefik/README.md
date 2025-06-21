@@ -1,3 +1,6 @@
+
+---
+
 # 🚀 Traefik Reverse Proxy with Cloudflare DNS & Google Public CA (EAB)
 
 This repository contains the configuration to deploy [Traefik](https://traefik.io/) as a reverse proxy using:
@@ -6,14 +9,17 @@ This repository contains the configuration to deploy [Traefik](https://traefik.i
 * **Google Public CA** via ACME protocol with **External Account Binding (EAB)**.
 * Secure dashboard access with HTTP Basic Authentication.
 
+> **Note:**
+> This example is designed for **local or internal environments** to allow SSL on `localhost` by pre-configuring your **local DNS server or `/etc/hosts` file** to resolve `*.local.example.com` to your Traefik host.
+
 ---
 
 ## 📁 Directory Structure
 
-```bash
+```
 /opt/traefik
 │
-├── certs/                  # ACME Certificates storage
+├── certs/                  # ACME certificates storage
 ├── .env                    # Environment variables
 └── docker-compose.yml      # Traefik Docker Compose configuration
 ```
@@ -39,18 +45,90 @@ docker network create proxy
 Create a `.env` file:
 
 ```dotenv
-CF_DNS_API_TOKEN=0oCP_H_MS1h87d7WzD8et9nS
-ACME_EAB_KID=e1904fcbc0a0ab77453
-ACME_EAB_HMAC_KEY=35Cu_ATri2lHiE_noCwQFq7MfRSioJ16ffG80F7IxIE_PrUMOwOAeBIREd5LEIg
+CF_DNS_API_TOKEN=your_cloudflare_dns_token
+ACME_EAB_KID=chureeth7ooj0bip9jeghaivootaib2H
+ACME_EAB_HMAC_KEY=caiYaemah3chahvaiQuaof1eeWeeph6me4uod5ahei2kahHoolaijooshaig1tao
 AUTH_USERS=admin
 AUTH_PASSWORD=$$2y$$10$$BAqQbyOOU2hdhqPuCk57OuEcMTLqK0.kXTt63B7DZGxqBxEydlyt6
 ```
 
-> 💡 **Notes:**
+💡 **Explanation:**
+
+| Variable            | Description                                                              |
+| ------------------- | ------------------------------------------------------------------------ |
+| `CF_DNS_API_TOKEN`  | Cloudflare API Token with **Zone\:Read** and **DNS\:Edit** permissions.  |
+| `ACME_EAB_KID`      | EAB Key ID obtained from Google Public CA.                               |
+| `ACME_EAB_HMAC_KEY` | EAB HMAC Key obtained from Google Public CA.                             |
+| `AUTH_USERS`        | HTTP Basic Auth username for Traefik Dashboard access. Example: `admin`. |
+| `AUTH_PASSWORD`     | **bcrypt hash** for Traefik Dashboard password.                          |
+
+> **Important about `AUTH_PASSWORD`:**
+> Since Docker Compose automatically parses `$` for variable substitution, all dollar signs (`$`) in the bcrypt hash **must be escaped by doubling them (`$$`)** inside the `.env` file.
+> For example:
 >
-> * `CF_DNS_API_TOKEN`: Cloudflare API Token with **Zone\:Read** and **DNS\:Edit** permissions.
-> * `ACME_EAB_KID` & `ACME_EAB_HMAC_KEY`: Obtained from Google Public CA EAB.
-> * `AUTH_PASSWORD`: bcrypt hashed password for Traefik dashboard Basic Auth.
+> Original bcrypt hash:
+>
+> ```
+> $2y$10$BAqQbyOOU2hdhqPuCk57OuEcMTLqK0.kXTt63B7DZGxqBxEydlyt6
+> ```
+>
+> Must be written in `.env` as:
+>
+> ```
+> $$2y$$10$$BAqQbyOOU2hdhqPuCk57OuEcMTLqK0.kXTt63B7DZGxqBxEydlyt6
+> ```
+>
+> Otherwise, Docker Compose will throw a variable substitution error.
+
+---
+
+## 🔑 How to Generate Bcrypt Password for Traefik Dashboard
+
+You can generate a **bcrypt password hash** on Ubuntu 24.04 Server using either **`htpasswd`** (from `apache2-utils`) or Python.
+
+Here's how to generate a bcrypt hash for:
+
+* **Username**: `admin`
+* **Password**: `admin`
+
+---
+
+### ✅ Method 1: Using `htpasswd` (bcrypt)
+
+1. Install `apache2-utils` (if not already installed):
+
+   ```bash
+   sudo apt update
+   sudo apt install apache2-utils
+   ```
+
+2. Generate bcrypt hash:
+
+   ```bash
+   htpasswd -nbB admin admin
+   ```
+
+   Example output:
+
+   ```
+   admin:$2y$05$QXeU8rF8GHFd0/ybxGJOf.OZIbfrKj.vz9ykT9S6Xfdbyxy1YjvZa
+   ```
+
+---
+
+### ✅ Method 2: Using Python
+
+```bash
+python3 -c 'import bcrypt; print(bcrypt.hashpw(b"admin", bcrypt.gensalt()).decode())'
+```
+
+Example output:
+
+```
+$2b$12$5q8f1k3YOz0G8W4p8JDIf.fzYejIJoXRe1TuAsG4XbHGFbgO1kaEi
+```
+
+Use only the hash part (without `admin:`) and remember to escape `$` with `$$` in `.env`.
 
 ---
 
@@ -124,11 +202,9 @@ networks:
 
 ## 🔒 ACME EAB (External Account Binding) for Google Public CA
 
-This section configures Traefik to issue certificates via **Google Public CA** using EAB credentials:
+This configuration allows Traefik to issue certificates via **Google Public CA** using EAB credentials:
 
 ```yaml
---certificatesresolvers.myresolver.acme.caServer=https://dv.acme-v02.api.pki.goog/directory
---certificatesresolvers.myresolver.acme.eab=true
 --certificatesresolvers.myresolver.acme.eab.kid=${ACME_EAB_KID}
 --certificatesresolvers.myresolver.acme.eab.hmacEncoded=${ACME_EAB_HMAC_KEY}
 ```
@@ -141,28 +217,27 @@ This section configures Traefik to issue certificates via **Google Public CA** u
 gcloud services enable publicca.googleapis.com
 ```
 
-2. Generate EAB Credentials:
+2. Generate EAB credentials:
 
 ```bash
 gcloud publicca external-account-keys create
 ```
 
-Output example:
+Example output:
 
 ```json
 {
-  "keyId": "e1904fcbc0a0ab77453",
-  "b64MacKey": "35Cu_ATri2lHiE_noCwQFq7MfRSioJ16ffG80F7IxIE_PrUMOwOAeBIREd5LEIg"
+  "keyId": "chureeth7ooj0bip9jeghaivootaib2H",
+  "b64MacKey": "caiYaemah3chahvaiQuaof1eeWeeph6me4uod5ahei2kahHoolaijooshaig1tao"
 }
 ```
 
 Use:
 
-* **keyId** → `ACME_EAB_KID`
-* **b64MacKey** → `ACME_EAB_HMAC_KEY`
+* `keyId` → `ACME_EAB_KID`
+* `b64MacKey` → `ACME_EAB_HMAC_KEY`
 
-📚 **Reference**:
-[Google Cloud Public CA Tutorial](https://cloud.google.com/certificate-manager/docs/public-ca-tutorial?hl=en)
+📚 Reference: [Google Cloud Public CA Tutorial](https://cloud.google.com/certificate-manager/docs/public-ca-tutorial?hl=en)
 
 ---
 
@@ -176,20 +251,19 @@ Required environment variable:
 CF_DNS_API_TOKEN=your_cloudflare_dns_token
 ```
 
-This token needs the following permissions:
+This token requires:
 
-* **Zone / Zone / Read**
-* **Zone / DNS / Edit**
+* Zone / Zone / Read
+* Zone / DNS / Edit
 
-📚 **Reference**:
-[lego Cloudflare Provider Docs](https://go-acme.github.io/lego/dns/cloudflare/)
+📚 Reference: [lego Cloudflare Provider Docs](https://go-acme.github.io/lego/dns/cloudflare/)
 
 ---
 
 ## 🌐 Access Traefik Dashboard
 
 * URL: `https://traefik.local.example.com`
-* Auth: Use credentials from `.env`
+* Authentication: Use credentials defined in the `.env` file.
 
 ---
 
@@ -213,9 +287,10 @@ docker logs -f traefik
 
   * `local.example.com` with your own domain.
   * Email (`example@mail.com`) with your valid contact email.
-* ACME DNS Challenge requires valid Cloudflare-managed domain.
+* Ensure your **local DNS server or `/etc/hosts` file** resolves `*.local.example.com` to your Traefik host if testing in a local/internal environment.
+* ACME DNS Challenge requires a valid Cloudflare-managed domain.
 * ACME EAB credentials are valid for 7 days and for first-time ACME account registration only.
-* Enable firewall and Docker security best practices in production environments.
+* Apply firewall and Docker security best practices in production environments.
 
 ---
 
@@ -224,6 +299,6 @@ docker logs -f traefik
 * [Traefik Official Docs](https://doc.traefik.io/traefik/)
 * [Google Cloud Public CA](https://cloud.google.com/certificate-manager/docs/public-ca-overview)
 * [lego DNS Cloudflare Docs](https://go-acme.github.io/lego/dns/cloudflare/)
-* [ACME External Account Binding](https://datatracker.ietf.org/doc/html/rfc8555#section-7.3.4)
+* [ACME External Account Binding RFC](https://datatracker.ietf.org/doc/html/rfc8555#section-7.3.4)
 
 ---
